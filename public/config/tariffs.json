@@ -1,0 +1,16 @@
+{
+  "currency": "VND",
+  "unit": "kWh",
+  "effectiveDate": "2025-05-10",
+  "tiers": [
+    { "from": 0,   "to": 50,    "rate": 1984 },
+    { "from": 51,  "to": 100,   "rate": 2050 },
+    { "from": 101, "to": 200,   "rate": 2380 },
+    { "from": 201, "to": 300,   "rate": 2998 },
+    { "from": 301, "to": 400,   "rate": 3350 },
+    { "from": 401, "to": null,  "rate": 3460 }
+  ]
+}
+
+
+
