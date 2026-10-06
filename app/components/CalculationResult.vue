@@ -66,10 +66,12 @@ function rowClass(i: number, label: string) {
       <ul class="list-disc pl-5 mt-1 space-y-1">
         <li>
           <b>
-            Điện chung share đều: 
-            <span class="text-blue-600">{{ formatMoney(data.sharePerRoom) }}</span>
+            Điện chung / người:
+            <span class="text-blue-600" v-if="data.totalPeople > 0">{{ formatMoney(data.sharePerPerson) }}</span>
+            <span class="text-blue-600" v-else>—</span>
           </b>
-          <span class="italic"> (tạm tính[Điện chung] / số người sử dụng) </span>
+          <span class="italic" v-if="data.totalPeople > 0"> (tạm tính[Điện chung] / {{ data.totalPeople }} người) </span>
+          <span class="italic" v-else> (vui lòng nhập số người cho từng phòng) </span>
         </li>
         <li>
           <b>Total</b> = Tạm tính của từng phòng + điện chung đã share

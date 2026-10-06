@@ -4,6 +4,9 @@ type ReadingsForm = {
   oldF1: number;   newF1: number;  // Nghĩa
   oldF2: number;   newF2: number;  // Sa
   dangKwh: number;                 // Đăng
+  peopleNghia: number;
+  peopleSa: number;
+  peopleDang: number;
 }
 const model = defineModel<ReadingsForm>({ required: true })
 
@@ -18,6 +21,13 @@ const kwh = computed(() => {
   const dang  = (model.value.dangKwh || 0)
   const graw  = main - (nghia + sa + dang)
   return { main, nghia, sa, dang, graw }
+})
+
+const totalPeople = computed(() => {
+  const n = Number(model.value.peopleNghia || 0)
+  const s = Number(model.value.peopleSa || 0)
+  const d = Number(model.value.peopleDang || 0)
+  return Math.max(0, n) + Math.max(0, s) + Math.max(0, d)
 })
 
 function money(n?: number) {
@@ -35,6 +45,7 @@ function money(n?: number) {
           <th class="py-2 pr-4">Số cũ</th>
           <th class="py-2 pr-4">Số mới</th>
           <th class="py-2 pr-4">Số kWh sd</th>
+          <th class="py-2 pr-4 text-center">Số người</th>
         </tr>
       </thead>
 
@@ -51,6 +62,7 @@ function money(n?: number) {
                    class="w-32 rounded-lg border px-3 py-1.5 tabular-nums text-red-600" />
           </td>
           <td class="py-2 pr-4 tabular-nums font-semibold text-red-600">{{ kwh.main }}</td>
+          <td class="py-2 pr-4 text-center text-gray-400 select-none">—</td>
         </tr>
 
         <!-- Phòng Nghĩa -->
@@ -63,6 +75,10 @@ function money(n?: number) {
             <input v-model.number="model.newF1" type="number" min="0" class="w-32 rounded-lg border px-3 py-1.5 tabular-nums" />
           </td>
           <td class="py-2 pr-4 tabular-nums font-medium">{{ kwh.nghia }}</td>
+          <td class="py-2 pr-4 text-center">
+            <input v-model.number="model.peopleNghia" type="number" min="0" step="1"
+                   class="w-20 rounded-lg border px-3 py-1.5 tabular-nums text-center" />
+          </td>
         </tr>
 
         <!-- Phòng Sa -->
@@ -75,6 +91,10 @@ function money(n?: number) {
             <input v-model.number="model.newF2" type="number" min="0" class="w-32 rounded-lg border px-3 py-1.5 tabular-nums" />
           </td>
           <td class="py-2 pr-4 tabular-nums font-medium">{{ kwh.sa }}</td>
+          <td class="py-2 pr-4 text-center">
+            <input v-model.number="model.peopleSa" type="number" min="0" step="1"
+                   class="w-20 rounded-lg border px-3 py-1.5 tabular-nums text-center" />
+          </td>
         </tr>
 
         <!-- Phòng Đăng -->
@@ -86,6 +106,10 @@ function money(n?: number) {
             <input v-model.number="model.dangKwh" type="number" min="0" step="1"
                    class="w-32 rounded-lg border px-3 py-1.5 tabular-nums" placeholder="kWh ước lượng" />
           </td>
+          <td class="py-2 pr-4 text-center">
+            <input v-model.number="model.peopleDang" type="number" min="0" step="1"
+                   class="w-20 rounded-lg border px-3 py-1.5 tabular-nums text-center" />
+          </td>
         </tr>
 
         <!-- Điện chung -->
@@ -93,8 +117,11 @@ function money(n?: number) {
           <td class="py-2 pl-3 pr-4 font-semibold text-blue-600">Điện chung</td>
           <td class="py-2 pr-4 text-gray-400 select-none">—</td>
           <td class="py-2 pr-4 text-gray-400 select-none">—</td>
-          <td class="py-2 pr-4 tabular-nums font-semibold" :class="kwh.graw < 0 ? 'text-red-600' : ''">
+          <td class="py-2 pr-4 tabular-nums font-semibold text-blue-700" :class="kwh.graw < 0 ? 'text-red-600' : ''">
             {{ kwh.graw }}
+          </td>
+          <td class="py-2 pr-4 text-center tabular-nums font-semibold text-blue-700">
+            {{ totalPeople }}
           </td>
         </tr>
       </tbody>
@@ -106,7 +133,7 @@ function money(n?: number) {
       <ul class="list-disc pl-5 mt-1 space-y-1">
         <li>
           <b>Điện P. Đăng</b>: chỉ sử dụng quạt và bóng đèn
-          <span class="italic">(ước lượng ~35 kWh/tháng)</span>
+          <span class="italic">(ước lượng ~45 kWh/tháng)</span>
         </li>
         <li>
           <b>Điện chung</b> = Điện tổng − P.Nghĩa − P. Sa − P. Đăng

@@ -7,6 +7,10 @@ export interface Readings {
   oldF1: number;   newF1: number;   // 1st floor
   oldF2: number;   newF2: number;   // 2nd floor
   dangKwh: number;                  // 3rd floor (input kWh)
+  // Số người ở mỗi phòng (dùng để chia điện chung theo đầu người)
+  peopleNghia: number;
+  peopleSa: number;
+  peopleDang: number;
   mainAmount: number | null;        // Bill EVN
 }
 
@@ -29,9 +33,10 @@ export interface CalcResult {
     nghia: number; sa: number; dang: number; g: number; sumFloors: number;
   };
   adjustment: number;
-  sharePerRoom: number;  // tiền Điện chung sau nhân hệ số / 5
+  sharePerPerson: number; // tiền Điện chung sau nhân hệ số / tổng số người
   totals: { nghia: number; sa: number; dang: number; ground: number; sum: number };
-  numOfUsers: number;
+  totalPeople: number;
+  people: { nghia: number; sa: number; dang: number };
   warnings: string[];
 }
 
@@ -57,7 +62,12 @@ export function costTieredEVN(kwh: number, tiers: Tier[]): number {
 }
 
 export interface CalcOptions {
-  shareDivisor?: number; // số người chia tiền điện chung
+  /**
+   * Backward-compat: trước đây app chia điện chung theo 1 số người nhập ngoài (default 5).
+   * Hiện tại ưu tiên chia theo `read.peopleNghia/peopleSa/peopleDang`.
+   * Nếu tổng số người nhập = 0, sẽ fallback về shareDivisor (nếu có) để tránh chia 0.
+   */
+  shareDivisor?: number;
 }
 
 export function useElectricBill() {
@@ -100,15 +110,22 @@ export function useElectricBill() {
     const dangScaled  = pDang  * adjustment
     const gScaled     = pG     * adjustment
 
-    // ✅ Chia đều Điện chung cho 5 phòng theo yêu cầu
-    const divisor = Math.max(0.5, options.shareDivisor ?? 5)
-    const numOfUsers = kwhDang === 0 ? 4 : divisor;
-    const sharePerRoom = gScaled / numOfUsers;
+    // ✅ Chia điện chung theo số người thực tế (nhập ở bảng)
+    const people = {
+      nghia: Math.max(0, clamp(read.peopleNghia)),
+      sa: Math.max(0, clamp(read.peopleSa)),
+      dang: Math.max(0, clamp(read.peopleDang)),
+    }
+    const totalPeopleRaw = people.nghia + people.sa + people.dang
+    const fallbackDivisor = options.shareDivisor != null ? Math.max(0.5, options.shareDivisor) : 0
+    const totalPeople = totalPeopleRaw > 0 ? totalPeopleRaw : fallbackDivisor
+    if (totalPeopleRaw === 0) warnings.push('Total people is 0. Please enter people counts for rooms to allocate shared electricity.')
+    const sharePerPerson = totalPeople > 0 ? (gScaled / totalPeople) : 0
 
     // Total theo công thức mới
-    const nghiaTotal = nghiaScaled + (sharePerRoom * 2) // Tầng 1: 2 người
-    const saTotal    = saScaled    + (sharePerRoom * 2) // Tầng 2: 2 người
-    const dangTotal  = kwhDang === 0 ? 0 : (dangScaled + sharePerRoom) // Tầng 3: 1 người
+    const nghiaTotal = nghiaScaled + (sharePerPerson * people.nghia)
+    const saTotal    = saScaled    + (sharePerPerson * people.sa)
+    const dangTotal  = dangScaled  + (sharePerPerson * people.dang)
     const groundTotal = 0 // Điện chung = 0 vì đã chia đều cho phòng khác
 
     const sumTotal = nghiaTotal + saTotal + dangTotal + groundTotal
@@ -128,9 +145,10 @@ export function useElectricBill() {
       kwh: { main: kwhMain, nghia: kwhNghia, sa: kwhSa, dang: kwhDang, g: kwhGraw },
       provisional: { mainCalc: pMainCalc, mainUsed, nghia: pNghia, sa: pSa, dang: pDang, g: pG, sumFloors },
       adjustment,
-      sharePerRoom,
+      sharePerPerson,
       totals: { nghia: nghiaTotal, sa: saTotal, dang: dangTotal, ground: groundTotal, sum: sumTotal },
-      numOfUsers,
+      totalPeople,
+      people,
       warnings
     }
   }
